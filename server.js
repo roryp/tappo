@@ -30,6 +30,8 @@ export function createGameServer({
   let busy = false;
   let nextDecision = 0;
   const server = createServer(async (request, response) => {
+    response.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+    response.setHeader("X-Frame-Options", "DENY");
     try {
       const allowedHosts = [
         `127.0.0.1:${server.address().port}`,

@@ -121,6 +121,20 @@ menus and results to capture late reports, and stops when the page is left.
 Ordinary CPU-only play still makes no model calls. Counters reset when the
 server restarts; other Copilot activity and earlier server runs are not included.
 
+## Security and hosting
+
+The local Node server sends `Content-Security-Policy: frame-ancestors 'none'`
+and `X-Frame-Options: DENY` on every response. This prevents another website
+from framing the game and disguising clicks that enable billable AI requests.
+Open the game in a top-level browser tab; iframe-based previews are intentionally
+blocked.
+
+Publishing these files to GitHub does not expose the loopback-only SDK server.
+The AI backend is intended for local use, not unauthenticated public hosting.
+If you serve the game through another web server or reverse proxy, preserve
+the anti-framing headers and do not expose the AI endpoints without appropriate
+authentication and authorization.
+
 ## Controls
 
 Movement keys specify a direction; vehicles turn or strafe according to their

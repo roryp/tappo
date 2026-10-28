@@ -561,7 +561,7 @@ test("multiple AI slots each need a unique plan", () => {
   assert.throws(() => parsePlans(JSON.stringify({ plans }), multi));
 });
 
-test("HTTP server protects API calls, validates state and never serves backend files", async (t) => {
+test("HTTP server blocks framing, protects API calls and never serves backend files", async (t) => {
   let preparations = 0;
   const usage = new AiDirector({ log: quiet }).usageSnapshot();
   const director = {
@@ -587,6 +587,25 @@ test("HTTP server protects API calls, validates state and never serves backend f
       }),
   );
   const base = `http://127.0.0.1:${server.address().port}`;
+  for (const path of ["/", "/index.html", "/?seed=42"]) {
+    const page = await fetch(base + path);
+    assert.equal(page.status, 200);
+    assert.equal(
+      page.headers.get("content-security-policy"),
+      "frame-ancestors 'none'",
+    );
+    assert.equal(page.headers.get("x-frame-options"), "DENY");
+    assert.match(page.headers.get("content-type"), /^text\/html/);
+    assert.match(await page.text(), /src="\.\/game\.js"/);
+  }
+  const head = await fetch(base + "/", { method: "HEAD" });
+  assert.equal(head.status, 200);
+  assert.equal(
+    head.headers.get("content-security-policy"),
+    "frame-ancestors 'none'",
+  );
+  assert.equal(head.headers.get("x-frame-options"), "DENY");
+  assert.equal(await head.text(), "");
   assert.equal((await fetch(base + "/server.js")).status, 404);
   assert.equal((await fetch(base + "/copilot-ai.js")).status, 404);
   assert.equal((await fetch(base + "/api/ai/status")).status, 403);
@@ -595,6 +614,7 @@ test("HTTP server protects API calls, validates state and never serves backend f
     headers: { "X-Tap-Tactics": "1" },
   });
   assert.equal(usageResponse.headers.get("cache-control"), "no-store");
+  assert.equal(usageResponse.headers.get("x-frame-options"), "DENY");
   assert.deepEqual(await usageResponse.json(), usage);
   assert.equal(preparations, 0);
   assert.equal(
